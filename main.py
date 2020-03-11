@@ -3,6 +3,9 @@ from tensorflow import keras
 from load_bird_images import load_birds
 from plot_birds import inspect_birds, inspect_bird_results
 from models import get_bird_model
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+
+model_name = 'bird_model.h5'
 
 def train(birds, class_numbers, class_names):
     #load model
@@ -13,30 +16,30 @@ def train(birds, class_numbers, class_names):
     print(model.summary())
 
     #fit model
-    data_gen_args = dict(
-                        rotation_range=5,
+    data_gen_args = dict(rotation_range=5,
                         width_shift_range=0.05,
                         height_shift_range=0.05,
-                        shear_range=1
-                        )
+                        shear_range=1)
     datagen = keras.preprocessing.image.ImageDataGenerator(data_gen_args)
     datagen.fit(birds)
-    model.fit_generator(
-        generator=datagen.flow(birds, class_numbers, batch_size=10),
-        steps_per_epoch=100,
-        epochs=5,
-        #verbose=1,
-        #callbacks=None,
-        #validation_data=None,
-        #validation_steps=None,
-        #validation_freq=1,
-        #class_weight=None,
-        #max_queue_size=10,
-        #workers=1,
-        #use_multiprocessing=False,
-        shuffle=True,
-        #initial_epoch=0
-        )
+    callbacks = [EarlyStopping(monitor='val_loss', patience=3, verbose=0),
+                 ModelCheckpoint(model_name, save_best_only=True, verbose=0),]
+    model.fit_generator(generator=datagen.flow(birds, class_numbers, batch_size=10),
+                        steps_per_epoch=100,
+                        epochs=5,
+                        #verbose=1,
+                        callbacks=callbacks,
+                        #validation_data=None,
+                        #validation_steps=None,
+                        #validation_freq=1,
+                        #class_weight=None,
+                        #max_queue_size=10,
+                        #workers=1,
+                        #use_multiprocessing=False,
+                        shuffle=True,
+                        #initial_epoch=0
+                        )
+    model.save(model_name)
 
     return model
 
